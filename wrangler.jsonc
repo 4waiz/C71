@@ -4,6 +4,7 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-06-26",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [{ "pattern": "tamkeen.kanbanstudios.ae", "custom_domain": true }],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
