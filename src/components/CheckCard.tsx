@@ -4,26 +4,39 @@ import { useState } from "react";
 import type { CheckResult } from "@/lib/tanseeq/types";
 import { TONE_STYLE } from "./ui";
 
+const ICON: Record<CheckResult["id"], string> = {
+  land: "🏗️",
+  demand: "🏥",
+  mobility: "🚌",
+  capital: "💼",
+  market: "📈",
+};
+
 export default function CheckCard({ check }: { check: CheckResult }) {
   const [open, setOpen] = useState(false);
   const tone = TONE_STYLE[check.tone];
 
   return (
-    <div className="tnsq-rise rounded-2xl border border-room-line bg-room-panel p-4 transition hover:border-teal/30">
+    <div className="tnsq-rise tamm-card p-4 transition hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-room-ink">{check.title}</div>
-          <div className="text-[11px] text-room-muted" dir="rtl">
-            {check.titleAr}
+        <div className="flex items-start gap-2.5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-surface-soft text-lg">
+            {ICON[check.id]}
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-ink">{check.title}</div>
+            <div className="text-[11px] text-muted" dir="rtl">
+              {check.titleAr}
+            </div>
           </div>
         </div>
         <div className="text-right">
           <div className={`text-2xl font-bold tabular-nums ${tone.text}`}>{check.score}</div>
-          <div className="text-[10px] uppercase tracking-wider text-room-muted">/ 100</div>
+          <div className="text-[10px] uppercase tracking-wider text-muted">/ 100</div>
         </div>
       </div>
 
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/5">
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-soft">
         <div className={`meter-fill h-full rounded-full ${tone.bar}`} style={{ width: `${check.score}%` }} />
       </div>
 
@@ -34,18 +47,18 @@ export default function CheckCard({ check }: { check: CheckResult }) {
         {check.status}
       </span>
 
-      <p className="mt-2 text-[13px] leading-snug text-room-muted">{check.finding}</p>
+      <p className="mt-2 text-[13px] leading-snug text-muted">{check.finding}</p>
 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="mt-2 text-[11px] font-medium text-teal transition hover:text-[var(--teal-soft)]"
+        className="mt-2 text-[11px] font-semibold text-teal-ink transition hover:opacity-80"
       >
         {open ? "Hide evidence" : "Show evidence & fields"}
       </button>
 
       {open && (
-        <div className="mt-2 space-y-2 border-t border-room-line pt-2 text-[12px] text-room-muted">
+        <div className="mt-2 space-y-2 border-t border-line pt-2 text-[12px] text-muted">
           <ul className="space-y-1">
             {check.evidence.map((e, i) => (
               <li key={i} className="flex gap-1.5">
@@ -55,11 +68,11 @@ export default function CheckCard({ check }: { check: CheckResult }) {
             ))}
           </ul>
           <p>
-            <span className="font-semibold text-rose-300">Risk: </span>
+            <span className="font-semibold text-rose-700">Risk: </span>
             {check.risk}
           </p>
           <p>
-            <span className="font-semibold text-teal">Recommendation: </span>
+            <span className="font-semibold text-teal-ink">Recommendation: </span>
             {check.recommendation}
           </p>
           {check.matchingInvestors && check.matchingInvestors.length > 0 && (
@@ -67,7 +80,7 @@ export default function CheckCard({ check }: { check: CheckResult }) {
               {check.matchingInvestors.map((m) => (
                 <span
                   key={m.investor_id}
-                  className="rounded-md border border-gold/30 bg-gold/10 px-1.5 py-0.5 text-[11px] text-gold"
+                  className="rounded-md border border-gold/30 bg-gold-soft px-1.5 py-0.5 text-[11px] text-gold"
                   title={`${m.investor_type} · ${m.capital_range_aed} · ${m.risk_profile} · ${m.investment_horizon} · fit ${m.strategic_fit_score}`}
                 >
                   {m.investor_id} · {m.preferred_sector}
@@ -77,10 +90,7 @@ export default function CheckCard({ check }: { check: CheckResult }) {
           )}
           <div className="flex flex-wrap gap-1">
             {check.fieldsUsed.map((f) => (
-              <span
-                key={f}
-                className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-room-muted"
-              >
+              <span key={f} className="tag font-mono !text-[10px]">
                 {f}
               </span>
             ))}

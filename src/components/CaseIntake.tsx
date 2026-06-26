@@ -34,25 +34,18 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
       : null);
 
   return (
-    <div className="rounded-3xl border border-portal-line bg-portal-surface shadow-sm">
-      <div className="flex items-center justify-between border-b border-portal-line px-6 py-4">
+    <div className="tamm-card overflow-hidden">
+      <div className="flex items-center justify-between border-b border-line bg-surface-soft/60 px-6 py-4">
         <div>
-          <h2 className="text-base font-semibold text-portal-ink">Case Intake</h2>
-          <p className="text-xs text-portal-muted">Government-service review request · auto-selected demo case</p>
+          <h2 className="text-base font-semibold text-ink">Case Intake · طلب المراجعة</h2>
+          <p className="text-xs text-muted">Government-service review request · auto-selected demo case</p>
         </div>
-        <span className="rounded-full bg-teal/10 px-2.5 py-1 text-[11px] font-medium text-[var(--teal)]">
-          Auto-selected
-        </span>
+        <span className="tag bg-teal-soft text-teal-ink">Auto-selected</span>
       </div>
 
       <div className="space-y-5 px-6 py-5">
-        {/* Parcel selection */}
         <Field label="Demo parcel" hint="Vacant · high development potential">
-          <select
-            className="form-input"
-            value={value.parcelId}
-            onChange={(e) => set("parcelId", e.target.value)}
-          >
+          <select className="form-input" value={value.parcelId} onChange={(e) => set("parcelId", e.target.value)}>
             {selected && !vacantParcels.some((p) => p.parcel_id === selected.parcel_id) && (
               <option value={selected.parcel_id}>
                 {selected.parcel_id} — {selected.district} (potential {selected.development_potential_score})
@@ -70,10 +63,7 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
           <ReadOnly label="District" value={selected?.district ?? "—"} />
           <ReadOnly label="Parcel ID" value={value.parcelId} mono />
           <ReadOnly label="Current status" value="vacant" />
-          <ReadOnly
-            label="Recommended use"
-            value={(selected?.recommended_use ?? "—").replace(/_/g, " ")}
-          />
+          <ReadOnly label="Recommended use" value={(selected?.recommended_use ?? "—").replace(/_/g, " ")} />
         </div>
 
         <Field label="Proposed land use">
@@ -86,23 +76,8 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
           </select>
         </Field>
 
-        <Slider
-          label="Residential units"
-          value={value.residentialUnits}
-          min={0}
-          max={1200}
-          step={20}
-          onChange={(v) => set("residentialUnits", v)}
-        />
-        <Slider
-          label="Retail share"
-          suffix="%"
-          value={value.retailSharePct}
-          min={0}
-          max={100}
-          step={5}
-          onChange={(v) => set("retailSharePct", v)}
-        />
+        <Slider label="Residential units" value={value.residentialUnits} min={0} max={1200} step={20} onChange={(v) => set("residentialUnits", v)} />
+        <Slider label="Retail share" suffix="%" value={value.retailSharePct} min={0} max={100} step={5} onChange={(v) => set("retailSharePct", v)} />
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Community facility">
@@ -133,8 +108,8 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
                 onClick={() => set("priority", p)}
                 className={`rounded-xl border px-3 py-2 text-xs font-medium capitalize transition ${
                   value.priority === p
-                    ? "border-teal bg-teal/10 text-[var(--teal)]"
-                    : "border-portal-line bg-white text-portal-muted hover:border-portal-muted/40"
+                    ? "border-teal bg-teal-soft text-teal-ink"
+                    : "border-line bg-surface text-muted hover:border-muted/40"
                 }`}
               >
                 {p === "roi" ? "ROI" : p}
@@ -147,7 +122,7 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
           type="button"
           onClick={onRun}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-portal-ink px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -163,14 +138,14 @@ export default function CaseIntake({ value, onChange, demoParcel, vacantParcels,
         .form-input {
           width: 100%;
           border-radius: 0.75rem;
-          border: 1px solid var(--portal-line);
+          border: 1px solid var(--line);
           background: #fff;
           padding: 0.55rem 0.75rem;
           font-size: 0.85rem;
-          color: var(--portal-ink);
+          color: var(--ink);
           outline: none;
         }
-        .form-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(22,182,166,0.12); }
+        .form-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15,166,151,0.13); }
       `}</style>
     </div>
   );
@@ -180,8 +155,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   return (
     <label className="block">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-portal-ink">{label}</span>
-        {hint && <span className="text-[10px] text-portal-muted">{hint}</span>}
+        <span className="text-xs font-semibold text-ink">{label}</span>
+        {hint && <span className="text-[10px] text-muted">{hint}</span>}
       </div>
       {children}
     </label>
@@ -190,9 +165,9 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function ReadOnly({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="rounded-xl border border-portal-line bg-portal-bg/50 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-portal-muted">{label}</div>
-      <div className={`truncate text-sm font-medium capitalize text-portal-ink ${mono ? "font-mono normal-case" : ""}`}>
+    <div className="rounded-xl border border-line bg-surface-soft px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted">{label}</div>
+      <div className={`truncate text-sm font-medium capitalize text-ink ${mono ? "font-mono normal-case" : ""}`}>
         {value}
       </div>
     </div>
@@ -219,8 +194,8 @@ function Slider({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-xs font-semibold text-portal-ink">{label}</span>
-        <span className="rounded-md bg-portal-ink px-2 py-0.5 text-[11px] font-semibold text-white tabular-nums">
+        <span className="text-xs font-semibold text-ink">{label}</span>
+        <span className="rounded-md bg-ink px-2 py-0.5 text-[11px] font-semibold text-white tabular-nums">
           {value}
           {suffix ?? ""}
         </span>

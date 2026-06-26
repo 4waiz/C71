@@ -27,12 +27,12 @@ export default function DecisionRoom({
   const { evidence: e } = result;
 
   return (
-    <section className="room-grid rounded-3xl border border-room-line p-5 text-room-ink shadow-2xl sm:p-6">
+    <section>
       {/* Room header */}
       <div className="no-print mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="tnsq-pulse h-2 w-2 rounded-full bg-teal" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-room-muted">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
             Decision Room · غرفة القرار
           </h2>
         </div>
@@ -40,27 +40,30 @@ export default function DecisionRoom({
           <button
             type="button"
             onClick={onDownload}
-            className="rounded-lg border border-room-line bg-room-panel px-3 py-1.5 text-xs font-medium text-room-ink transition hover:border-teal/40"
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition hover:border-teal/40 hover:shadow-sm"
           >
             Download brief (.md)
           </button>
           <button
             type="button"
             onClick={onPrint}
-            className="rounded-lg border border-room-line bg-room-panel px-3 py-1.5 text-xs font-medium text-room-ink transition hover:border-teal/40"
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition hover:border-teal/40 hover:shadow-sm"
           >
             Print / PDF
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* LEFT — selected parcel / district evidence */}
-        <aside className="lg:col-span-3">
-          <div className="rounded-2xl border border-room-line bg-room-panel p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-room-muted">Selected parcel</h3>
-            <div className="mt-2 font-mono text-lg font-bold text-room-ink">{e.parcel.parcel_id}</div>
-            <div className="text-[13px] text-room-muted">
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+        {/* LEFT GROUP — parcel + checks + scenario lab */}
+        <div className="space-y-5 xl:col-span-8">
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-8">
+        {/* selected parcel / district evidence */}
+        <aside className="xl:col-span-3">
+          <div className="tamm-card p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted">Selected parcel</h3>
+            <div className="mt-2 font-mono text-lg font-bold text-ink">{e.parcel.parcel_id}</div>
+            <div className="text-[13px] text-muted">
               {e.parcel.district} · {e.parcel.zone}
             </div>
 
@@ -72,8 +75,8 @@ export default function DecisionRoom({
               <Row k="Recommended" v={e.parcel.recommended_use.replace(/_/g, " ")} />
             </dl>
 
-            <div className="mt-4 border-t border-room-line pt-3">
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-room-muted">
+            <div className="mt-4 border-t border-line pt-3">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                 District signals
               </h4>
               <dl className="mt-2 space-y-2 text-[12px]">
@@ -85,23 +88,20 @@ export default function DecisionRoom({
                     <Row k="Population" v={e.community.population_estimate.toLocaleString()} />
                   </>
                 ) : (
-                  <p className="text-room-muted">No community record (insufficient evidence).</p>
+                  <p className="text-muted">No community record (insufficient evidence).</p>
                 )}
               </dl>
             </div>
 
-            <div className="mt-4 border-t border-room-line pt-3">
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-room-muted">
+            <div className="mt-4 border-t border-line pt-3">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                 OSM amenities · هذا الحي
               </h4>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {Object.entries(e.amenityCounts)
                   .sort((a, b) => b[1] - a[1])
                   .map(([cat, n]) => (
-                    <span
-                      key={cat}
-                      className="rounded-md border border-room-line bg-room-bg/40 px-1.5 py-0.5 text-[11px] capitalize text-room-muted"
-                    >
+                    <span key={cat} className="tag capitalize">
                       {cat} {n}
                     </span>
                   ))}
@@ -111,29 +111,36 @@ export default function DecisionRoom({
         </aside>
 
         {/* CENTER — divergence meter + five checks */}
-        <div className="space-y-5 lg:col-span-5">
+        <div className="space-y-5 xl:col-span-5">
           <DivergenceMeter evidence={e} />
           <div>
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-room-muted">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
               Five coordination checks · فحوصات التنسيق الخمسة
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {e.checks.map((c) => (
-                <CheckCard key={c.id} check={c} />
-              ))}
+              {e.checks.map((c, i) => {
+                const lastOdd = i === e.checks.length - 1 && e.checks.length % 2 === 1;
+                return (
+                  <div key={c.id} className={lastOdd ? "sm:col-span-2" : undefined}>
+                    <CheckCard check={c} />
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        </div>
+        </div>
+
+          {/* scenario lab — fills the column under the checks */}
+          <div className="no-print">
+            <ScenarioLab comparisons={comparisons} activeKey={activeScenarioKey} onSelect={onSelectScenario} />
           </div>
         </div>
 
         {/* RIGHT — conditions brief */}
-        <div className="lg:col-span-4">
+        <div className="xl:col-span-4">
           <ConditionsBrief result={result} />
         </div>
-      </div>
-
-      {/* BOTTOM — scenario lab */}
-      <div className="no-print mt-5">
-        <ScenarioLab comparisons={comparisons} activeKey={activeScenarioKey} onSelect={onSelectScenario} />
       </div>
     </section>
   );
@@ -142,8 +149,8 @@ export default function DecisionRoom({
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <dt className="text-room-muted">{k}</dt>
-      <dd className="truncate text-right font-medium capitalize text-room-ink">{v}</dd>
+      <dt className="text-muted">{k}</dt>
+      <dd className="truncate text-right font-medium capitalize text-ink">{v}</dd>
     </div>
   );
 }

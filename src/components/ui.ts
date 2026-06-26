@@ -1,62 +1,61 @@
 import type { CheckTone, DecisionLabel } from "@/lib/tanseeq/types";
 
-// Visual tone for the five-check scores in the dark intelligence room.
+// Visual tone for the five-check scores (light TAMM-style palette).
 export const TONE_STYLE: Record<
   CheckTone,
-  { text: string; bar: string; chip: string; dot: string }
+  { text: string; bar: string; chip: string; dot: string; ring: string }
 > = {
   strong: {
-    text: "text-teal",
+    text: "text-teal-ink",
     bar: "bg-teal",
-    chip: "border-teal/40 bg-teal/10 text-teal",
+    chip: "border-teal/30 bg-teal-soft text-teal-ink",
     dot: "bg-teal",
+    ring: "ring-teal/20",
   },
   adequate: {
-    text: "text-emerald-300",
-    bar: "bg-emerald-400/80",
-    chip: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-    dot: "bg-emerald-400",
+    text: "text-emerald-700",
+    bar: "bg-emerald-500",
+    chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    dot: "bg-emerald-500",
+    ring: "ring-emerald-200",
   },
   watch: {
-    text: "text-amber-300",
-    bar: "bg-amber-400/80",
-    chip: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-    dot: "bg-amber-400",
+    text: "text-amber-700",
+    bar: "bg-amber-500",
+    chip: "border-amber-200 bg-amber-50 text-amber-700",
+    dot: "bg-amber-500",
+    ring: "ring-amber-200",
   },
   constrained: {
-    text: "text-rose-300",
-    bar: "bg-rose-400/80",
-    chip: "border-rose-400/30 bg-rose-400/10 text-rose-300",
-    dot: "bg-rose-400",
+    text: "text-rose-700",
+    bar: "bg-rose-500",
+    chip: "border-rose-200 bg-rose-50 text-rose-700",
+    dot: "bg-rose-500",
+    ring: "ring-rose-200",
   },
 };
 
 // Visual tone for the advisory decision label.
-export const DECISION_STYLE: Record<DecisionLabel, { chip: string; dot: string; ring: string }> = {
+export const DECISION_STYLE: Record<DecisionLabel, { chip: string; dot: string }> = {
   "Support for review": {
-    chip: "border-teal/40 bg-teal/10 text-teal",
+    chip: "border-teal/30 bg-teal-soft text-teal-ink",
     dot: "bg-teal",
-    ring: "ring-teal/30",
   },
   "Support with light conditions": {
-    chip: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-    dot: "bg-emerald-400",
-    ring: "ring-emerald-400/30",
+    chip: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    dot: "bg-emerald-500",
   },
   "Support with conditions": {
-    chip: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-    dot: "bg-amber-400",
-    ring: "ring-amber-400/30",
+    chip: "border-amber-200 bg-amber-50 text-amber-700",
+    dot: "bg-amber-500",
   },
   "Re-scope before review": {
-    chip: "border-orange-400/40 bg-orange-400/10 text-orange-300",
-    dot: "bg-orange-400",
-    ring: "ring-orange-400/30",
+    chip: "border-orange-200 bg-orange-50 text-orange-700",
+    dot: "bg-orange-500",
   },
   "Hold for additional evidence": {
-    chip: "border-rose-400/40 bg-rose-400/10 text-rose-300",
-    dot: "bg-rose-400",
-    ring: "ring-rose-400/30",
+    chip: "border-rose-200 bg-rose-50 text-rose-700",
+    dot: "bg-rose-500",
   },
 };
 
