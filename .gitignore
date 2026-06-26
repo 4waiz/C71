@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Local data-source workspace (not part of the app)
 /Cursor DOCS/
+
+# Cloudflare / OpenNext build output & local secrets
+/.open-next/
+/.wrangler/
+.dev.vars
+.dev.vars.*
