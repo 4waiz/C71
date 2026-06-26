@@ -8,7 +8,7 @@ export function renderBriefMarkdown(result: ReviewResult): string {
 
   lines.push(`# Tanseeq Conditions Brief / موجز التنسيق`);
   lines.push("");
-  lines.push(`> Advisory conditions brief for a human review committee. Not a regulatory approval.`);
+  lines.push(`> Advisory conditions brief for a human review committee. Not a substitute for statutory development consent.`);
   lines.push("");
   lines.push(`- **Case file:** ${e.caseFileId}`);
   lines.push(`- **Parcel:** ${e.parcel.parcel_id} (${e.parcel.current_status.replace(/_/g, " ")})`);

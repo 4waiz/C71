@@ -83,7 +83,7 @@ export function deterministicBrief(packet: EvidencePacket): ConditionsBriefNarra
     `Case file ${packet.caseFileId} — a ${packet.proposedUseLabel.toLowerCase()} proposal on vacant parcel ${packet.parcel.parcel_id} in ${packet.parcel.district}. ` +
     `Land, capital and market signals average ${readyScore}/100, giving a development pressure of ${pressure.developmentPressure}/100, ` +
     `but community absorption sits at ${pressure.communityAbsorption}/100 — a coordination divergence of ${pressure.coordinationDivergence}. ` +
-    `On that basis Tanseeq advises: ${decisionLabel}. This is an advisory position for the human review committee, not a regulatory approval.`;
+    `On that basis Tanseeq advises: ${decisionLabel}. This is an advisory position for the human review committee — not a substitute for statutory development consent.`;
 
   const whyNotAsSubmitted =
     pressure.coordinationDivergence <= 15
@@ -163,7 +163,7 @@ function buildQuestions(packet: EvidencePacket): string[] {
 
 function limitations(packet: EvidencePacket): string[] {
   return [
-    "Tanseeq is an advisory decision-intelligence prototype; it does not grant regulatory approval, consent or official authority.",
+    "Tanseeq is an advisory decision-intelligence prototype; it does not grant statutory consent, approval or official authority.",
     "Challenge sample datasets (parcels, transactions, investors, communities, listings, districts) are synthetic and used for prototype scoring only.",
     "OpenStreetMap amenities are real © OpenStreetMap contributors and reflect mapped data only — unmapped facilities are not counted.",
     packet.community
