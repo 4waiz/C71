@@ -17,6 +17,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const reqIdRef = useRef(0);
 
   const reviewProposal = useCallback(async (p: DevelopmentProposal): Promise<CoordinationFile> => {
     const res = await fetch("/api/review", {
@@ -30,29 +31,34 @@ export default function Home() {
 
   const generate = useCallback(
     async (p: DevelopmentProposal, scrollIntoView = false) => {
+      const id = ++reqIdRef.current;
       setLoading(true);
       setError(null);
       try {
         const data = await reviewProposal(p);
+        if (reqIdRef.current !== id) return; // a newer request superseded this one
         setFile(data);
         if (scrollIntoView && outputRef.current) {
           outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Unable to generate coordination file");
+        if (reqIdRef.current === id) {
+          setError(e instanceof Error ? e.message : "Unable to generate coordination file");
+        }
       } finally {
-        setLoading(false);
+        if (reqIdRef.current === id) setLoading(false);
       }
     },
     [reviewProposal],
   );
 
   useEffect(() => {
+    const id = ++reqIdRef.current;
     let cancelled = false;
     void (async () => {
       try {
         const data = await reviewProposal(PRESETS[0].proposal);
-        if (!cancelled) setFile(data);
+        if (!cancelled && reqIdRef.current === id) setFile(data);
       } catch {
         /* initial load failure is non-fatal; user can retry */
       }
@@ -61,6 +67,8 @@ export default function Home() {
       cancelled = true;
     };
   }, [reviewProposal]);
+
+  const isStale = file !== null && JSON.stringify(file.proposal) !== JSON.stringify(proposal);
 
   const applyPreset = (id: string) => {
     const preset = PRESETS.find((p) => p.id === id);
@@ -228,6 +236,22 @@ export default function Home() {
                 </button>
               </div>
             </div>
+
+            {isStale && file ? (
+              <div className="no-print mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                <span>
+                  Proposal inputs have changed since determination{" "}
+                  <span className="font-mono font-semibold">{file.reference}</span>.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => generate(proposal)}
+                  className="rounded-md border border-amber-400 bg-white px-3 py-1 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                >
+                  Regenerate
+                </button>
+              </div>
+            ) : null}
 
             {file ? (
               <CoordinationView file={file} />
