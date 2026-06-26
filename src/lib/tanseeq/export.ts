@@ -66,3 +66,29 @@ export function renderBriefMarkdown(result: ReviewResult): string {
 
   return lines.join("\n");
 }
+
+// Full grounded evidence packet + narrative as JSON — for audit / re-processing.
+export function renderEvidenceJson(result: ReviewResult): string {
+  return JSON.stringify(result, null, 2);
+}
+
+// The five coordination checks as a flat CSV — for spreadsheet review.
+export function renderChecksCsv(result: ReviewResult): string {
+  const { evidence: e } = result;
+  const esc = (v: string | number) => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows: string[] = [];
+  rows.push(["check", "score", "status", "finding", "risk", "recommendation"].join(","));
+  for (const c of e.checks) {
+    rows.push([c.title, c.score, c.status, c.finding, c.risk, c.recommendation].map(esc).join(","));
+  }
+  rows.push("");
+  rows.push(["metric", "value"].join(","));
+  rows.push(["development_pressure", e.pressure.developmentPressure].map(esc).join(","));
+  rows.push(["community_absorption", e.pressure.communityAbsorption].map(esc).join(","));
+  rows.push(["coordination_divergence", e.pressure.coordinationDivergence].map(esc).join(","));
+  rows.push(["decision_readiness", e.decisionLabel].map(esc).join(","));
+  return rows.join("\n");
+}

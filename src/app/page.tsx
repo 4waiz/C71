@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CaseIntake from "@/components/CaseIntake";
 import DecisionRoom from "@/components/DecisionRoom";
+import ReportsPanel from "@/components/ReportsPanel";
 import type { ScenarioComparison } from "@/components/ScenarioLab";
 import { DEFAULT_SCENARIO } from "@/lib/tanseeq/scenarios";
 import type { ScenarioKey } from "@/lib/tanseeq/scenarios";
-import { renderBriefMarkdown } from "@/lib/tanseeq/export";
+import { renderBriefMarkdown, renderEvidenceJson, renderChecksCsv } from "@/lib/tanseeq/export";
 import type { Parcel, ReviewResult, ScenarioSettings } from "@/lib/tanseeq/types";
 
 interface VacantParcel {
@@ -105,16 +106,30 @@ export default function Home() {
     void runReview(c.scenario);
   };
 
-  const handleDownload = () => {
+  const downloadFile = (content: string, ext: string, mime: string) => {
     if (!result) return;
-    const md = renderBriefMarkdown(result);
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${result.evidence.caseFileId}.md`;
+    a.download = `${result.evidence.caseFileId}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownload = () => {
+    if (!result) return;
+    downloadFile(renderBriefMarkdown(result), "md", "text/markdown");
+  };
+
+  const handleDownloadJson = () => {
+    if (!result) return;
+    downloadFile(renderEvidenceJson(result), "json", "application/json");
+  };
+
+  const handleDownloadCsv = () => {
+    if (!result) return;
+    downloadFile(renderChecksCsv(result), "csv", "text/csv");
   };
 
   const scrollRail = (dir: -1 | 1) => {
@@ -257,6 +272,13 @@ export default function Home() {
                   loading={loading}
                 />
                 {error && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</p>}
+                <ReportsPanel
+                  result={result}
+                  onDownloadMarkdown={handleDownload}
+                  onDownloadJson={handleDownloadJson}
+                  onDownloadCsv={handleDownloadCsv}
+                  onPrint={() => window.print()}
+                />
               </div>
             </div>
 
