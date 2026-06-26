@@ -1,90 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ZONE_REGULATIONS } from "@/lib/tanseeq/regulations";
-import { buildCoordinationFile } from "@/lib/tanseeq/coordination";
-import type { DevelopmentProposal, LandUse, ServiceStatus, ZoneCode } from "@/lib/tanseeq/types";
+import { loadDataset, selectDemoParcel } from "@/lib/tanseeq/data";
+import { runReview } from "@/lib/tanseeq/scoring";
+import { generateBrief } from "@/lib/tanseeq/llm";
+import type {
+  CommunityFacility,
+  DecisionPriority,
+  MobilityCondition,
+  ProposedUse,
+  ReviewResult,
+  ScenarioSettings,
+} from "@/lib/tanseeq/types";
 
-const LAND_USES: LandUse[] = [
+// The engine reads CSVs from the filesystem — force the Node runtime.
+export const runtime = "nodejs";
+
+const USES: ProposedUse[] = [
   "residential",
-  "commercial",
   "mixed_use",
-  "industrial",
+  "retail_commercial",
+  "community_facility",
   "hospitality",
-  "community",
 ];
-const SERVICE_STATUSES: ServiceStatus[] = ["available", "planned", "absent"];
+const FACILITIES: CommunityFacility[] = ["none", "clinic", "school", "park", "grocery"];
+const MOBILITY: MobilityCondition[] = ["none", "shuttle", "bus_stop", "shaded_walkway"];
+const PRIORITIES: DecisionPriority[] = ["roi", "community", "balanced"];
 
-function num(value: unknown): number {
-  const n = typeof value === "string" ? parseFloat(value) : (value as number);
-  return Number.isFinite(n) ? n : 0;
+function pick<T>(value: unknown, allowed: T[], fallback: T): T {
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+function int(value: unknown, fallback: number): number {
+  const n = typeof value === "number" ? value : parseInt(String(value), 10);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : fallback;
 }
 
-function str(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function service(value: unknown): ServiceStatus {
-  return SERVICE_STATUSES.includes(value as ServiceStatus) ? (value as ServiceStatus) : "absent";
-}
-
-/**
- * Coerce arbitrary JSON into a well-formed proposal so the engine never sees
- * undefined fields, regardless of what the client submits.
- */
-function normalizeProposal(body: Record<string, unknown>): DevelopmentProposal {
-  const zoneCode = (Object.keys(ZONE_REGULATIONS).includes(str(body.zoneCode))
-    ? body.zoneCode
-    : "R2") as ZoneCode;
-  const proposedUse = (LAND_USES.includes(body.proposedUse as LandUse)
-    ? body.proposedUse
-    : "residential") as LandUse;
-  const u = (body.utilities ?? {}) as Record<string, unknown>;
-  const c = (body.siteConstraints ?? {}) as Record<string, unknown>;
-
+function normalizeScenario(body: Record<string, unknown>, demoParcelId: string): ScenarioSettings {
   return {
-    projectName: str(body.projectName),
-    applicant: str(body.applicant),
-    parcelId: str(body.parcelId),
-    locality: str(body.locality),
-    zoneCode,
-    proposedUse,
-    plotAreaSqm: num(body.plotAreaSqm),
-    grossFloorAreaSqm: num(body.grossFloorAreaSqm),
-    buildingFootprintSqm: num(body.buildingFootprintSqm),
-    buildingHeightM: num(body.buildingHeightM),
-    storeys: num(body.storeys),
-    dwellingUnits: num(body.dwellingUnits),
-    parkingSpaces: num(body.parkingSpaces),
-    frontSetbackM: num(body.frontSetbackM),
-    sideSetbackM: num(body.sideSetbackM),
-    rearSetbackM: num(body.rearSetbackM),
-    landscapeAreaSqm: num(body.landscapeAreaSqm),
-    greenRating: num(body.greenRating),
-    hasLegalAccess: Boolean(body.hasLegalAccess),
-    utilities: {
-      water: service(u.water),
-      power: service(u.power),
-      sewer: service(u.sewer),
-      stormwater: service(u.stormwater),
-    },
-    siteConstraints: {
-      floodZone: Boolean(c.floodZone),
-      heritageOverlay: Boolean(c.heritageOverlay),
-      contaminationRisk: Boolean(c.contaminationRisk),
-    },
-    estimatedJobs: num(body.estimatedJobs),
-    notes: str(body.notes),
+    parcelId: typeof body.parcelId === "string" && body.parcelId ? body.parcelId : demoParcelId,
+    proposedUse: pick(body.proposedUse, USES, "residential"),
+    residentialUnits: int(body.residentialUnits, 320),
+    retailSharePct: Math.min(100, int(body.retailSharePct, 15)),
+    communityFacility: pick(body.communityFacility, FACILITIES, "none"),
+    mobilityCondition: pick(body.mobilityCondition, MOBILITY, "none"),
+    priority: pick(body.priority, PRIORITIES, "balanced"),
   };
 }
 
 export async function POST(request: NextRequest) {
-  let body: Record<string, unknown>;
+  const data = loadDataset();
+  const demo = selectDemoParcel(data);
+
+  let body: Record<string, unknown> = {};
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    // empty / invalid body → assess the demo scenario as submitted
   }
 
-  const proposal = normalizeProposal(body);
-  const file = buildCoordinationFile(proposal);
-  return NextResponse.json(file);
+  const scenario = normalizeScenario(body, demo.parcel_id);
+  const evidence = runReview(data, scenario);
+  const brief = await generateBrief(evidence);
+
+  const result: ReviewResult = { evidence, brief };
+  return NextResponse.json(result);
+}
+
+// GET returns the auto-selected demo case so the UI can hydrate the intake form
+// without guessing a parcel id.
+export async function GET() {
+  const data = loadDataset();
+  const demo = selectDemoParcel(data);
+  return NextResponse.json({
+    demoParcel: demo,
+    districts: data.districts.map((d) => d.district),
+    vacantParcels: data.parcels
+      .filter((p) => p.current_status === "vacant")
+      .slice(0, 40)
+      .map((p) => ({
+        parcel_id: p.parcel_id,
+        district: p.district,
+        development_potential_score: p.development_potential_score,
+        recommended_use: p.recommended_use,
+      })),
+  });
 }

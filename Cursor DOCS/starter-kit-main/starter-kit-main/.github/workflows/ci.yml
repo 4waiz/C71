@@ -1,0 +1,102 @@
+name: Starter kit health
+
+# "No failures on our side": every push, plus a weekly heartbeat, proves that
+# everything a participant will run actually runs — datasets, all three
+# example agents (including the no-local-data Hugging Face fallback path),
+# and the notebook executed top to bottom.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly heartbeat, Mondays
+
+jobs:
+  # The exact commands participants run, on real macOS and Windows runners
+  quickstart-scripts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run quickstart.sh verbatim (macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./quickstart.sh
+      - name: Run quickstart.ps1 verbatim (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\quickstart.ps1
+
+  health:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: pip install pandas matplotlib jupyter nbconvert
+
+      - name: Docs never tell users to run bare pip/python
+        run: |
+          if grep -rnE '(^|[ `(])(pip install|python )' README.md docs/ examples/*/README.md examples/README.md \
+              | grep -v '.venv' | grep -v 'quickstart' | grep -v 'python3'; then
+            echo "::error::Participant-facing docs use bare 'pip'/'python' — they break on stock macOS. Use ./quickstart.sh or .venv paths."
+            exit 1
+          fi
+          echo "docs OK"
+
+      - name: Validate datasets
+        run: |
+          python3 - <<'EOF'
+          import csv
+          # name: (min_rows, n_cols)
+          EXPECTED = {
+              "districts": (20, 9),
+              "sample_parcels": (300, 10),
+              "sample_transactions": (1000, 8),
+              "sample_investors": (50, 8),
+              "sample_communities": (50, 8),
+              "sample_listings": (1000, 17),
+              "osm_amenities": (1000, 7),
+          }
+          districts = {r["district"] for r in csv.DictReader(open("data/districts.csv"))}
+          for name, (min_rows, cols) in EXPECTED.items():
+              rows = list(csv.DictReader(open(f"data/{name}.csv")))
+              assert len(rows) >= min_rows, f"{name}: only {len(rows)} rows"
+              assert all(len(r) == cols and all(str(v).strip() for v in r.values()) for r in rows), f"{name}: bad cols/empty"
+              if name != "districts":
+                  key = "preferred_district" if name == "sample_investors" else "district"
+                  bad = {r[key] for r in rows} - districts
+                  assert not bad, f"{name}: districts off-canon: {bad}"
+              print(f"{name}: {len(rows)} rows, {cols} cols OK")
+          EOF
+
+      - name: Run all example agents (local data)
+        run: |
+          for ex in land-intelligence-agent investment-matching-agent decision-copilot; do
+            echo "── $ex ──"
+            (cd "examples/$ex" && python3 main.py)
+          done
+
+      - name: Run an agent with NO local data (Hugging Face fallback)
+        run: |
+          cp -r examples /tmp/isolated-examples
+          (cd /tmp/isolated-examples/land-intelligence-agent && python3 main.py)
+
+      - name: Execute the notebook top to bottom
+        run: |
+          jupyter nbconvert --to notebook --execute \
+            notebooks/explore_sample_data.ipynb --output /tmp/executed.ipynb
+          echo "notebook executed cleanly"

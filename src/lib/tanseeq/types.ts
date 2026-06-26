@@ -1,160 +1,216 @@
-// Core domain model for Tanseeq — the AI Development Conditions Officer.
+// Domain model for Tanseeq — AI Development Conditions Briefing Officer.
+//
+// Tanseeq coordinates land, capital, market, community and mobility signals from
+// the Abu Dhabi PropTech challenge datasets into one advisory conditions brief
+// for a human review committee. Nothing here grants regulatory approval — every
+// output is advisory and traces back to an explicit signal in the data.
 
-export type LandUse =
-  | "residential"
-  | "commercial"
-  | "mixed_use"
-  | "industrial"
-  | "hospitality"
-  | "community";
+// ---------------------------------------------------------------------------
+// Raw dataset row shapes (parsed from the CSVs in /data)
+// ---------------------------------------------------------------------------
 
-export const LAND_USE_LABELS: Record<LandUse, string> = {
-  residential: "Residential",
-  commercial: "Commercial",
-  mixed_use: "Mixed-use",
-  industrial: "Industrial",
-  hospitality: "Hospitality",
-  community: "Community / Civic",
-};
+export interface District {
+  district: string;
+  area_type: string;
+  profile: string;
+  base_sale_aed_sqm: number;
+  gross_yield_pct: number;
+  infrastructure_score: number;
+  latitude: number;
+  longitude: number;
+  established_year: number;
+}
 
-export type ZoneCode = "R1" | "R2" | "R3" | "C1" | "MU" | "IND" | "HOS";
+export interface Parcel {
+  parcel_id: string;
+  district: string;
+  zone: string;
+  land_use: string;
+  parcel_size_sqm: number;
+  current_status: string; // vacant | under_development | developed | reserved
+  infrastructure_score: number;
+  development_potential_score: number;
+  estimated_value_aed: number;
+  recommended_use: string;
+}
 
-export type ServiceStatus = "available" | "planned" | "absent";
+export interface Transaction {
+  transaction_id: string;
+  date: string;
+  district: string;
+  asset_type: string;
+  transaction_value_aed: number;
+  size_sqm: number;
+  price_per_sqm: number;
+  buyer_type: string;
+}
 
-export const SERVICE_STATUS_LABELS: Record<ServiceStatus, string> = {
-  available: "Available at boundary",
-  planned: "Planned / committed",
-  absent: "Not available",
-};
+export interface Investor {
+  investor_id: string;
+  investor_type: string;
+  preferred_sector: string;
+  preferred_district: string;
+  capital_range_aed: string; // e.g. "15M-60M", "500M-2B"
+  risk_profile: string;
+  investment_horizon: string;
+  strategic_fit_score: number;
+}
 
-/**
- * Planning regulations applicable to a development zone. These encode the
- * "development conditions" that Tanseeq assesses a proposal against.
- */
-export interface ZoneRegulation {
-  code: ZoneCode;
+export interface Community {
+  community_id: string;
+  district: string;
+  population_estimate: number;
+  occupancy_rate: number;
+  service_demand_index: number;
+  mobility_score: number;
+  resident_experience_score: number;
+  optimization_opportunity: string;
+}
+
+export interface Listing {
+  listing_id: string;
+  district: string;
+  community: string;
+  listing_type: string; // rent | sale
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  size_sqm: number;
+  price_aed: number;
+  price_per_sqm_aed: number;
+  furnished: boolean;
+  amenities: string;
+  latitude: number;
+  longitude: number;
+  listed_date: string;
+  status: string; // available | let | sold | under_offer
+  agency_type: string;
+}
+
+export interface Amenity {
+  amenity_id: string;
+  category: string; // community | mobility | healthcare | retail | services | education
+  subtype: string;
   name: string;
-  summary: string;
-  permittedUses: LandUse[];
-  maxPlotRatio: number; // Floor Area Ratio = GFA / plot area
-  maxHeightM: number;
-  maxStoreys: number;
-  maxSiteCoverPct: number; // building footprint as % of plot area
-  minFrontSetbackM: number;
-  minSideSetbackM: number;
-  minRearSetbackM: number;
-  minLandscapePct: number; // soft landscaping as % of plot area
-  minParkingPerUnit: number; // applied to dwelling units
-  parkingPer100SqmGfa: number; // applied to non-residential GFA
-  maxDensityUnitsPerHa: number; // 0 = not applicable
-  minGreenRating: number; // sustainability stars (0-5)
+  latitude: number;
+  longitude: number;
+  district: string;
 }
 
-export interface UtilityServices {
-  water: ServiceStatus;
-  power: ServiceStatus;
-  sewer: ServiceStatus;
-  stormwater: ServiceStatus;
+export interface Dataset {
+  districts: District[];
+  parcels: Parcel[];
+  transactions: Transaction[];
+  investors: Investor[];
+  communities: Community[];
+  listings: Listing[];
+  amenities: Amenity[];
 }
 
-export interface SiteConstraints {
-  floodZone: boolean;
-  heritageOverlay: boolean;
-  contaminationRisk: boolean;
-}
+// ---------------------------------------------------------------------------
+// Scenario inputs chosen by the review officer
+// ---------------------------------------------------------------------------
 
-/**
- * A proposed real estate development submitted for review.
- */
-export interface DevelopmentProposal {
-  projectName: string;
-  applicant: string;
+export type ProposedUse =
+  | "residential"
+  | "mixed_use"
+  | "retail_commercial"
+  | "community_facility"
+  | "hospitality";
+
+export type CommunityFacility = "none" | "clinic" | "school" | "park" | "grocery";
+export type MobilityCondition = "none" | "shuttle" | "bus_stop" | "shaded_walkway";
+export type DecisionPriority = "roi" | "community" | "balanced";
+
+export interface ScenarioSettings {
   parcelId: string;
-  locality: string;
-  zoneCode: ZoneCode;
-  proposedUse: LandUse;
-  plotAreaSqm: number;
-  grossFloorAreaSqm: number;
-  buildingFootprintSqm: number;
-  buildingHeightM: number;
-  storeys: number;
-  dwellingUnits: number;
-  parkingSpaces: number;
-  frontSetbackM: number;
-  sideSetbackM: number;
-  rearSetbackM: number;
-  landscapeAreaSqm: number;
-  greenRating: number;
-  hasLegalAccess: boolean;
-  utilities: UtilityServices;
-  siteConstraints: SiteConstraints;
-  estimatedJobs: number;
-  notes: string;
+  proposedUse: ProposedUse;
+  residentialUnits: number;
+  retailSharePct: number;
+  communityFacility: CommunityFacility;
+  mobilityCondition: MobilityCondition;
+  priority: DecisionPriority;
 }
 
-/**
- * Status of an individual assessment check, ordered by escalating severity.
- * - pass:      compliant, no action.
- * - advisory:  compliant but worth noting; informational.
- * - condition: minor non-compliance, resolvable via a consent condition.
- * - major:     material non-compliance; the scheme must be revised (re-scope).
- * - blocker:   fundamental impediment; consent cannot be granted (hold).
- */
-export type CheckStatus = "pass" | "advisory" | "condition" | "major" | "blocker";
+// ---------------------------------------------------------------------------
+// Check + evidence output shapes
+// ---------------------------------------------------------------------------
 
-export const CHECK_SEVERITY: Record<CheckStatus, number> = {
-  pass: 0,
-  advisory: 1,
-  condition: 2,
-  major: 3,
-  blocker: 4,
-};
+export type CheckTone = "strong" | "adequate" | "watch" | "constrained";
 
-export interface ReviewCheck {
-  id: string;
-  category: string;
+export interface MatchingInvestor {
+  investor_id: string;
+  investor_type: string;
+  preferred_sector: string;
+  capital_range_aed: string;
+  risk_profile: string;
+  investment_horizon: string;
+  strategic_fit_score: number;
+}
+
+export interface CheckResult {
+  id: "land" | "demand" | "mobility" | "capital" | "market";
   title: string;
-  status: CheckStatus;
-  requirement: string;
-  observed: string;
-  detail: string;
-  condition?: string; // condition text when status === "condition"
-  remedy?: string; // re-scope directive when status === "major"
-  hold?: string; // hold reason when status === "blocker"
+  titleAr: string;
+  score: number; // 0–100
+  status: string;
+  tone: CheckTone;
+  finding: string;
+  evidence: string[];
+  risk: string;
+  recommendation: string;
+  fieldsUsed: string[];
+  // Capital fit also surfaces the investors that matched.
+  matchingInvestors?: MatchingInvestor[];
 }
 
-export type Verdict = "Proceed" | "Approve with Conditions" | "Re-scope" | "Hold";
+export type DecisionLabel =
+  | "Support for review"
+  | "Support with light conditions"
+  | "Support with conditions"
+  | "Re-scope before review"
+  | "Hold for additional evidence";
 
-export interface DerivedMetrics {
-  plotRatio: number;
-  siteCoverPct: number;
-  landscapePct: number;
-  densityUnitsPerHa: number;
-  parkingRequired: number;
-  parkingProvided: number;
-  efficiencyRatio: number; // GFA / footprint, ~ effective storeys
+export interface PressureModel {
+  developmentPressure: number;
+  communityAbsorption: number;
+  coordinationDivergence: number;
+  // Component breakdowns (for the meter / brief transparency)
+  pressureComponents: { label: string; value: number; weight: number }[];
+  absorptionComponents: { label: string; value: number; weight: number }[];
 }
 
+// The grounded evidence packet — the ONLY thing the AI layer may use.
+export interface EvidencePacket {
+  caseFileId: string;
+  parcel: Parcel;
+  district: District;
+  community: Community | null;
+  proposedUseLabel: string;
+  scenario: ScenarioSettings;
+  checks: CheckResult[];
+  pressure: PressureModel;
+  decisionLabel: DecisionLabel;
+  amenityCounts: Record<string, number>;
+  transactionTrend: { year: number; volume: number; avgPricePerSqm: number }[];
+  dataComplete: boolean;
+  missingEvidence: string[];
+}
+
+// The AI / committee-style explanation generated from the evidence packet.
+export interface ConditionsBriefNarrative {
+  decisionLabel: DecisionLabel;
+  committeeSummary: string;
+  whyNotAsSubmitted: string;
+  requiredConditions: string[];
+  evidenceReferences: string[];
+  questionsForHumanReview: string[];
+  limitations: string[];
+  generatedBy: "anthropic" | "openai" | "deterministic";
+}
+
+// The full review payload returned by /api/review.
 export interface ReviewResult {
-  verdict: Verdict;
-  complianceScore: number; // 0-100
-  headline: string;
-  checks: ReviewCheck[];
-  conditions: string[];
-  rescopeDirectives: string[];
-  holdReasons: string[];
-  routing: string[];
-  narrative: string[];
-  metrics: DerivedMetrics;
-  validityNote: string;
-  counts: Record<CheckStatus, number>;
-}
-
-export interface CoordinationFile {
-  reference: string;
-  issuedAt: string; // ISO timestamp
-  officer: string;
-  proposal: DevelopmentProposal;
-  zone: ZoneRegulation;
-  review: ReviewResult;
+  evidence: EvidencePacket;
+  brief: ConditionsBriefNarrative;
 }

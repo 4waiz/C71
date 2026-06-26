@@ -1,75 +1,134 @@
 @import "tailwindcss";
 
 :root {
-  --background: #eef1f6;
-  --surface: #ffffff;
-  --ink: #0f172a;
-  --muted: #5b6776;
-  --border: #dfe5ee;
-  --brand: #0b3a53;
+  /* TAMM-style off-white government portal shell */
+  --portal-bg: #f4f2ec;
+  --portal-surface: #ffffff;
+  --portal-ink: #1a2433;
+  --portal-muted: #5d6675;
+  --portal-line: #e3e0d6;
+
+  /* Cursor-style dark intelligence room */
+  --room-bg: #0a0f1a;
+  --room-panel: #111826;
+  --room-panel-2: #0e1420;
+  --room-line: #1f2a3a;
+  --room-ink: #e8edf5;
+  --room-muted: #8a97ab;
+
+  /* Accents */
+  --teal: #16b6a6;
+  --teal-soft: #1fd0bd;
+  --gold: #c9a24b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-line: var(--border);
-  --color-brand: var(--brand);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-portal-bg: var(--portal-bg);
+  --color-portal-surface: var(--portal-surface);
+  --color-portal-ink: var(--portal-ink);
+  --color-portal-muted: var(--portal-muted);
+  --color-portal-line: var(--portal-line);
+  --color-room-bg: var(--room-bg);
+  --color-room-panel: var(--room-panel);
+  --color-room-line: var(--room-line);
+  --color-room-ink: var(--room-ink);
+  --color-room-muted: var(--room-muted);
+  --color-teal: var(--teal);
+  --color-gold: var(--gold);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-html {
-  background: var(--background);
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--ink);
+  background: var(--portal-bg);
+  color: var(--portal-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle architectural grid backdrop for the app shell. */
-.app-backdrop {
-  background-color: var(--background);
+/* Faint architectural grid behind the portal shell */
+.portal-grid {
   background-image:
-    linear-gradient(to right, rgba(11, 58, 83, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11, 58, 83, 0.05) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(to right, rgba(26, 36, 51, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(26, 36, 51, 0.035) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+/* Dark room grid */
+.room-grid {
+  background-color: var(--room-bg);
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(22, 182, 166, 0.08), transparent 40%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    32px 32px,
+    32px 32px;
 }
 
 .tnsq-scroll::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 .tnsq-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #33415a;
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 .tnsq-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #46587a;
   background-clip: content-box;
+}
+
+/* Animated meter fills */
+.meter-fill {
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes tnsq-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tnsq-rise {
+  animation: tnsq-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tnsq-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.tnsq-pulse {
+  animation: tnsq-pulse 2s ease-in-out infinite;
 }
 
 @media print {
   .no-print {
     display: none !important;
   }
-  .print-full {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
+  .print-only {
+    display: block !important;
   }
-  .app-backdrop {
-    background: #ffffff !important;
-  }
+  html,
   body {
     background: #ffffff !important;
+  }
+  .print-full {
+    box-shadow: none !important;
+    border: none !important;
   }
 }
