@@ -206,7 +206,7 @@ export interface ConditionsBriefNarrative {
   evidenceReferences: string[];
   questionsForHumanReview: string[];
   limitations: string[];
-  generatedBy: "anthropic" | "openai" | "deterministic";
+  generatedBy: "anthropic" | "openai" | "groq" | "deterministic";
 }
 
 // The full review payload returned by /api/review.

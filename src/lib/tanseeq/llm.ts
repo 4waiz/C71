@@ -7,13 +7,14 @@
 // malformed, we fall back to the deterministic brief. The app never breaks
 // without API keys.
 //
-// Provider order: ANTHROPIC_API_KEY → OPENAI_API_KEY → deterministic.
+// Provider order: GROQ_API_KEY → ANTHROPIC_API_KEY → OPENAI_API_KEY → deterministic.
 
 import { deterministicBrief, toLlmEvidence } from "./evidence";
 import type { ConditionsBriefNarrative, DecisionLabel, EvidencePacket } from "./types";
 
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `You are Tanseeq, an AI Development Conditions Briefing Officer for a human real-estate review committee in Abu Dhabi.
 
@@ -41,6 +42,10 @@ export async function generateBrief(packet: EvidencePacket): Promise<ConditionsB
   const userPrompt = `Evidence packet:\n${JSON.stringify(evidence)}`;
 
   try {
+    if (process.env.GROQ_API_KEY) {
+      const raw = await callGroq(userPrompt);
+      return finalize(raw, packet.decisionLabel, "groq") ?? fallback;
+    }
     if (process.env.ANTHROPIC_API_KEY) {
       const raw = await callAnthropic(userPrompt);
       return finalize(raw, packet.decisionLabel, "anthropic") ?? fallback;
@@ -54,6 +59,30 @@ export async function generateBrief(packet: EvidencePacket): Promise<ConditionsB
     return fallback;
   }
   return fallback;
+}
+
+async function callGroq(userPrompt: string): Promise<string> {
+  // Groq exposes an OpenAI-compatible chat-completions endpoint.
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${process.env.GROQ_API_KEY as string}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`Groq ${res.status}`);
+  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  return data.choices?.[0]?.message?.content ?? "";
 }
 
 async function callAnthropic(userPrompt: string): Promise<string> {
@@ -104,7 +133,7 @@ async function callOpenAI(userPrompt: string): Promise<string> {
 function finalize(
   raw: string,
   decisionLabel: DecisionLabel,
-  generatedBy: "anthropic" | "openai",
+  generatedBy: "anthropic" | "openai" | "groq",
 ): ConditionsBriefNarrative | null {
   const json = extractJson(raw);
   if (!json) return null;
