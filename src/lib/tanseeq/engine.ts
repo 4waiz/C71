@@ -31,18 +31,19 @@ const CATEGORY_DEPARTMENTS: Record<string, string> = {
 const SCORE_PENALTY: Record<CheckStatus, number> = {
   pass: 0,
   advisory: 2,
-  condition: 7,
-  major: 17,
-  blocker: 34,
+  condition: 5,
+  major: 10,
+  blocker: 16,
 };
 
-// Upper bound on the compliance score implied by each verdict, so the headline
-// number always reads consistently with the determination.
-const SCORE_CAP: Record<Verdict, number> = {
-  Proceed: 100,
-  "Approve with Conditions": 90,
-  "Re-scope": 66,
-  Hold: 44,
+// Compliance score band [min, max] implied by each verdict, so the headline
+// number always reads consistently with — and is well separated by —
+// the determination. The raw penalty score is clamped into the band.
+const SCORE_BAND: Record<Verdict, [number, number]> = {
+  Proceed: [92, 100],
+  "Approve with Conditions": [72, 90],
+  "Re-scope": [46, 67],
+  Hold: [5, 42],
 };
 
 function worstStatus(statuses: CheckStatus[]): CheckStatus {
@@ -404,8 +405,9 @@ function determineVerdict(checks: ReviewCheck[]): Verdict {
 
 function computeScore(checks: ReviewCheck[], verdict: Verdict): number {
   const penalty = checks.reduce((sum, c) => sum + SCORE_PENALTY[c.status], 0);
-  const raw = Math.max(5, 100 - penalty);
-  return Math.min(raw, SCORE_CAP[verdict]);
+  const raw = Math.max(0, 100 - penalty);
+  const [min, max] = SCORE_BAND[verdict];
+  return Math.min(Math.max(raw, min), max);
 }
 
 function buildRouting(p: DevelopmentProposal, checks: ReviewCheck[]): string[] {
